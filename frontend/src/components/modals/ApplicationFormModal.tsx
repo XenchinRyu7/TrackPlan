@@ -9,7 +9,7 @@ import {
   EMPLOYMENT_TYPE_LABELS,
   CURRENCIES,
 } from '../../constants/status';
-import { X, Building2, Briefcase, MapPin, Globe, Mail, User, Check, CalendarCheck } from 'lucide-react';
+import { X, Building2, Briefcase, MapPin, Globe, Mail, User, Check, CalendarCheck, AlertCircle } from 'lucide-react';
 
 interface ApplicationFormModalProps {
   isOpen: boolean;
@@ -44,7 +44,15 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   const [notes, setNotes] = useState('');
   const [statusNote, setStatusNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ company?: string; position?: string }>({});
+  const [errors, setErrors] = useState<{ company?: string; position?: string; salary?: string }>({});
+
+  const isSalaryInvalid = Boolean(
+    salaryMin &&
+    salaryMax &&
+    parseFloat(salaryMin) > 0 &&
+    parseFloat(salaryMax) > 0 &&
+    parseFloat(salaryMax) < parseFloat(salaryMin)
+  );
 
   useEffect(() => {
     if (editItem) {
@@ -98,16 +106,27 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, company, position, type, status, appliedDate, interviewDate]);
+  }, [isOpen, company, position, type, status, appliedDate, interviewDate, salaryMin, salaryMax]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    const errs: { company?: string; position?: string } = {};
+    const errs: { company?: string; position?: string; salary?: string } = {};
     if (!company.trim()) errs.company = 'Company name is required';
     if (!position.trim()) errs.position = 'Position title is required';
+
+    const minVal = salaryMin ? parseFloat(salaryMin) : 0;
+    const maxVal = salaryMax ? parseFloat(salaryMax) : 0;
+
+    if (minVal < 0) {
+      errs.salary = 'Minimum salary cannot be negative';
+    } else if (maxVal < 0) {
+      errs.salary = 'Maximum salary cannot be negative';
+    } else if (salaryMin && salaryMax && maxVal > 0 && minVal > 0 && maxVal < minVal) {
+      errs.salary = 'Salary Max cannot be smaller than Salary Min';
+    }
 
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -322,43 +341,68 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           </div>
 
           {/* Compensation */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div>
-              <label className="block font-semibold text-zinc-300 mb-1">Salary Min</label>
-              <input
-                type="number"
-                placeholder="e.g. 5000000"
-                value={salaryMin}
-                onChange={(e) => setSalaryMin(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-white font-mono"
-              />
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div>
+                <label className="block font-semibold text-zinc-300 mb-1">Salary Min</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 5000000"
+                  value={salaryMin}
+                  onChange={(e) => {
+                    setSalaryMin(e.target.value);
+                    if (errors.salary) setErrors((prev) => ({ ...prev, salary: undefined }));
+                  }}
+                  className={`w-full bg-zinc-950 border rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:outline-none font-mono ${
+                    isSalaryInvalid || errors.salary
+                      ? 'border-red-500/80 focus:border-red-400'
+                      : 'border-zinc-700 focus:border-white'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-zinc-300 mb-1">Salary Max</label>
+                <input
+                  type="number"
+                  min={salaryMin ? Math.max(0, parseFloat(salaryMin) || 0) : '0'}
+                  placeholder="e.g. 10000000"
+                  value={salaryMax}
+                  onChange={(e) => {
+                    setSalaryMax(e.target.value);
+                    if (errors.salary) setErrors((prev) => ({ ...prev, salary: undefined }));
+                  }}
+                  className={`w-full bg-zinc-950 border rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:outline-none font-mono ${
+                    isSalaryInvalid || errors.salary
+                      ? 'border-red-500/80 focus:border-red-400'
+                      : 'border-zinc-700 focus:border-white'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-zinc-300 mb-1">Currency</label>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-white cursor-pointer"
+                >
+                  {CURRENCIES.map((curr) => (
+                    <option key={curr} value={curr}>
+                      {curr}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block font-semibold text-zinc-300 mb-1">Salary Max</label>
-              <input
-                type="number"
-                placeholder="e.g. 10000000"
-                value={salaryMax}
-                onChange={(e) => setSalaryMax(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-white font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-zinc-300 mb-1">Currency</label>
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-white cursor-pointer"
-              >
-                {CURRENCIES.map((curr) => (
-                  <option key={curr} value={curr}>
-                    {curr}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {(isSalaryInvalid || errors.salary) && (
+              <div className="flex items-center gap-1.5 text-xs text-red-400 mt-2 font-medium bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-1.5">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{errors.salary || 'Salary Max tidak boleh lebih kecil dari Salary Min'}</span>
+              </div>
+            )}
           </div>
 
           {/* URLs */}
