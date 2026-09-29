@@ -79,7 +79,7 @@ Ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/trackplan.git
+git clone https://github.com/XenchinRyu7/TrackPlan.git
 cd trackplan
 
 # Start live development
@@ -136,7 +136,7 @@ If **TrackPlan** helps you land your next dream job or internship, consider supp
 
 - ⭐ **Star this repository** on GitHub
 - ☕ **Buy Me a Coffee**: [buymeacoffee.com/trackplan](https://www.buymeacoffee.com/trackplan)
-- 💖 **GitHub Sponsors**: [github.com/sponsors/yourusername](https://github.com/sponsors)
+- 💖 **GitHub Sponsors**: [github.com/sponsors/XenchinRyu7](https://github.com/sponsors/XenchinRyu7)
 - 🇮🇩 **Saweria**: [saweria.co/trackplan](https://saweria.co/trackplan)
 
 ---
