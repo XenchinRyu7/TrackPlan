@@ -180,6 +180,108 @@ export namespace backend {
 	        this.initial_note = source["initial_note"];
 	    }
 	}
+	export class EmailAccount {
+	    id: number;
+	    label: string;
+	    provider: string;
+	    email: string;
+	    imap_host: string;
+	    imap_port: number;
+	    app_password: string;
+	    use_ssl: boolean;
+	    is_active: boolean;
+	    last_sync_at: string;
+	    last_sync_status: string;
+	    created_at: string;
+	    updated_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new EmailAccount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.provider = source["provider"];
+	        this.email = source["email"];
+	        this.imap_host = source["imap_host"];
+	        this.imap_port = source["imap_port"];
+	        this.app_password = source["app_password"];
+	        this.use_ssl = source["use_ssl"];
+	        this.is_active = source["is_active"];
+	        this.last_sync_at = source["last_sync_at"];
+	        this.last_sync_status = source["last_sync_status"];
+	        this.created_at = source["created_at"];
+	        this.updated_at = source["updated_at"];
+	    }
+	}
+	export class EmailAccountRequest {
+	    id: number;
+	    label: string;
+	    provider: string;
+	    email: string;
+	    imap_host: string;
+	    imap_port: number;
+	    app_password: string;
+	    use_ssl: boolean;
+	    is_active: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new EmailAccountRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.provider = source["provider"];
+	        this.email = source["email"];
+	        this.imap_host = source["imap_host"];
+	        this.imap_port = source["imap_port"];
+	        this.app_password = source["app_password"];
+	        this.use_ssl = source["use_ssl"];
+	        this.is_active = source["is_active"];
+	    }
+	}
+	export class EmailNotification {
+	    id: number;
+	    account_id: number;
+	    account_email: string;
+	    message_id: string;
+	    sender: string;
+	    subject: string;
+	    snippet: string;
+	    platform: string;
+	    detected_company: string;
+	    detected_role: string;
+	    detected_status: string;
+	    received_at: string;
+	    is_read: boolean;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new EmailNotification(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.account_id = source["account_id"];
+	        this.account_email = source["account_email"];
+	        this.message_id = source["message_id"];
+	        this.sender = source["sender"];
+	        this.subject = source["subject"];
+	        this.snippet = source["snippet"];
+	        this.platform = source["platform"];
+	        this.detected_company = source["detected_company"];
+	        this.detected_role = source["detected_role"];
+	        this.detected_status = source["detected_status"];
+	        this.received_at = source["received_at"];
+	        this.is_read = source["is_read"];
+	        this.created_at = source["created_at"];
+	    }
+	}
 	export class FilterOptions {
 	    search: string;
 	    type: string;
@@ -250,6 +352,26 @@ export namespace backend {
 	        this.offers = source["offers"];
 	        this.rejected = source["rejected"];
 	        this.status_distribution = source["status_distribution"];
+	    }
+	}
+	export class SyncResult {
+	    account_id: number;
+	    account_email: string;
+	    success: boolean;
+	    new_emails: number;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SyncResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.account_id = source["account_id"];
+	        this.account_email = source["account_email"];
+	        this.success = source["success"];
+	        this.new_emails = source["new_emails"];
+	        this.error = source["error"];
 	    }
 	}
 	

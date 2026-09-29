@@ -13,6 +13,16 @@ import {
   AddTimelineNote,
   DeleteApplication,
   GetDatabasePath,
+  GetEmailAccounts,
+  SaveEmailAccount,
+  DeleteEmailAccount,
+  SyncEmailAccount,
+  SyncAllEmailAccounts,
+  GetEmailNotifications,
+  MarkNotificationAsRead,
+  MarkAllNotificationsAsRead,
+  DeleteNotification,
+  GetUnreadNotificationCount,
 } from '../wailsjs/go/main/App';
 
 import { Sidebar, NavTab } from './components/layout/Sidebar';
@@ -28,6 +38,8 @@ import { ApplicationFormModal } from './components/modals/ApplicationFormModal';
 import { ApplicationDetailModal } from './components/modals/ApplicationDetailModal';
 import { ConfirmDeleteModal } from './components/modals/ConfirmDeleteModal';
 import { SettingsPage } from './components/settings/SettingsPage';
+import { EmailSyncPage } from './components/email/EmailSyncPage';
+import { EmailAccountModal } from './components/modals/EmailAccountModal';
 import { ToastContainer, ToastMessage } from './components/common/Toast';
 
 export function App() {
@@ -57,6 +69,15 @@ export function App() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; company: string } | null>(null);
 
+  // Email alerts & accounts
+  const [emailAccounts, setEmailAccounts] = useState<backend.EmailAccount[]>([]);
+  const [emailNotifications, setEmailNotifications] = useState<backend.EmailNotification[]>([]);
+  const [unreadEmailCount, setUnreadEmailCount] = useState<number>(0);
+  const [isSyncingEmails, setIsSyncingEmails] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [editEmailAccount, setEditEmailAccount] = useState<backend.EmailAccount | null>(null);
+  const [formInitialValues, setFormInitialValues] = useState<Partial<backend.Application> | null>(null);
+
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +94,7 @@ export function App() {
   // Load database info & data
   const loadData = async () => {
     try {
-      const [statsData, appsData, recentData, eventsData, path] = await Promise.all([
+      const [statsData, appsData, recentData, eventsData, path, accountsData, notifsData, unreadCount] = await Promise.all([
         GetStats(),
         GetApplications(
           new backend.FilterOptions({
@@ -87,6 +108,9 @@ export function App() {
         GetRecentApplications(10),
         GetScheduleEvents(),
         GetDatabasePath(),
+        GetEmailAccounts(),
+        GetEmailNotifications(100, false, 'ALL'),
+        GetUnreadNotificationCount(),
       ]);
 
       setStats(statsData);
@@ -94,8 +118,26 @@ export function App() {
       setRecentApplications(recentData || []);
       setScheduleEvents(eventsData || []);
       setDbPath(path || '');
+      setEmailAccounts(accountsData || []);
+      setEmailNotifications(notifsData || []);
+      setUnreadEmailCount(unreadCount || 0);
     } catch (err) {
       console.error('Failed to load data:', err);
+    }
+  };
+
+  const loadEmailData = async () => {
+    try {
+      const [accountsData, notifsData, unreadCount] = await Promise.all([
+        GetEmailAccounts(),
+        GetEmailNotifications(100, false, 'ALL'),
+        GetUnreadNotificationCount(),
+      ]);
+      setEmailAccounts(accountsData || []);
+      setEmailNotifications(notifsData || []);
+      setUnreadEmailCount(unreadCount || 0);
+    } catch (err) {
+      console.error('Failed to load email data:', err);
     }
   };
 
@@ -224,6 +266,102 @@ export function App() {
     setCurrentTab('applications');
   };
 
+  // Email Account & Sync Handlers
+  const handleSaveEmailAccount = async (req: backend.EmailAccountRequest) => {
+    try {
+      await SaveEmailAccount(req);
+      showToast('success', 'Akun Email Tersimpan', `${req.email} berhasil dikonfigurasi.`);
+      await loadEmailData();
+    } catch (err: any) {
+      showToast('error', 'Gagal Menyimpan Akun', err?.message || String(err));
+      throw err;
+    }
+  };
+
+  const handleDeleteEmailAccount = async (id: number) => {
+    try {
+      await DeleteEmailAccount(id);
+      showToast('info', 'Akun Dihapus', 'Akun email dan notifikasinya telah dihapus.');
+      await loadEmailData();
+    } catch (err: any) {
+      showToast('error', 'Gagal Menghapus Akun', err?.message || String(err));
+    }
+  };
+
+  const handleSyncAccount = async (id: number) => {
+    setIsSyncingEmails(true);
+    try {
+      const res = await SyncEmailAccount(id);
+      if (res.success) {
+        showToast('success', 'Sinkronisasi Berhasil', `Ditemukan ${res.new_emails} email lamaran baru dari ${res.account_email}.`);
+      } else {
+        showToast('error', 'Sinkronisasi Gagal', res.error || 'Terjadi kesalahan saat membaca mailbox.');
+      }
+      await loadEmailData();
+    } catch (err: any) {
+      showToast('error', 'Gagal Sinkronisasi', err?.message || String(err));
+    } finally {
+      setIsSyncingEmails(false);
+    }
+  };
+
+  const handleSyncAllEmails = async () => {
+    setIsSyncingEmails(true);
+    try {
+      const results = await SyncAllEmailAccounts();
+      const totalNew = results.reduce((sum, r) => sum + (r.new_emails || 0), 0);
+      showToast('success', 'Sinkronisasi Selesai', `Sinkronisasi semua akun selesai (${totalNew} email baru ditemukan).`);
+      await loadEmailData();
+    } catch (err: any) {
+      showToast('error', 'Gagal Sinkronisasi', err?.message || String(err));
+    } finally {
+      setIsSyncingEmails(false);
+    }
+  };
+
+  const handleToggleNotificationRead = async (id: number, isRead: boolean) => {
+    try {
+      await MarkNotificationAsRead(id, isRead);
+      await loadEmailData();
+    } catch (err) {
+      console.error('Failed to toggle read:', err);
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await MarkAllNotificationsAsRead();
+      showToast('info', 'Semua Ditandai Dibaca');
+      await loadEmailData();
+    } catch (err) {
+      console.error('Failed to mark all read:', err);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number) => {
+    try {
+      await DeleteNotification(id);
+      await loadEmailData();
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const handleConvertToApplication = (notif: backend.EmailNotification) => {
+    let initialStatus = 'APPLIED';
+    if (notif.detected_status === 'INTERVIEW') initialStatus = 'INTERVIEW';
+    else if (notif.detected_status === 'OFFER') initialStatus = 'OFFER';
+
+    setFormInitialValues({
+      company: notif.detected_company || '',
+      position: notif.detected_role || '',
+      status: initialStatus,
+      notes: `[Dari ${notif.platform} via ${notif.account_email}]\nSubjek: ${notif.subject}\n\nCuplikan Pesan:\n${notif.snippet}`,
+    });
+    setEditAppItem(null);
+    setIsFormModalOpen(true);
+  };
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-black text-zinc-100 font-sans selection:bg-white selection:text-black">
       {/* Toast Notifications */}
@@ -235,9 +373,11 @@ export function App() {
         onTabChange={setCurrentTab}
         onNewApplication={() => {
           setEditAppItem(null);
+          setFormInitialValues(null);
           setIsFormModalOpen(true);
         }}
         totalApplications={stats?.total_applications || 0}
+        unreadEmailCount={unreadEmailCount}
         dbPath={dbPath}
       />
 
@@ -339,8 +479,34 @@ export function App() {
                 onSetInterviewDate={handleSetInterviewDate}
                 onNewApplication={() => {
                   setEditAppItem(null);
+                  setFormInitialValues(null);
                   setIsFormModalOpen(true);
                 }}
+              />
+            </div>
+          )}
+
+          {currentTab === 'email-sync' && (
+            <div className="max-w-7xl mx-auto">
+              <EmailSyncPage
+                accounts={emailAccounts}
+                notifications={emailNotifications}
+                onAddAccount={() => {
+                  setEditEmailAccount(null);
+                  setIsAccountModalOpen(true);
+                }}
+                onEditAccount={(acc) => {
+                  setEditEmailAccount(acc);
+                  setIsAccountModalOpen(true);
+                }}
+                onDeleteAccount={handleDeleteEmailAccount}
+                onSyncAccount={handleSyncAccount}
+                onSyncAll={handleSyncAllEmails}
+                onToggleRead={handleToggleNotificationRead}
+                onMarkAllRead={handleMarkAllNotificationsRead}
+                onDeleteNotification={handleDeleteNotification}
+                onConvertToApplication={handleConvertToApplication}
+                isSyncing={isSyncingEmails}
               />
             </div>
           )}
@@ -364,9 +530,22 @@ export function App() {
         onClose={() => {
           setIsFormModalOpen(false);
           setEditAppItem(null);
+          setFormInitialValues(null);
         }}
         onSubmit={handleFormSubmit}
         editItem={editAppItem}
+        initialValues={formInitialValues}
+      />
+
+      {/* Email Account Config Modal (Add / Edit) */}
+      <EmailAccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => {
+          setIsAccountModalOpen(false);
+          setEditEmailAccount(null);
+        }}
+        onSave={handleSaveEmailAccount}
+        editAccount={editEmailAccount}
       />
 
       {/* Application Detail Modal (Timeline & Info) */}

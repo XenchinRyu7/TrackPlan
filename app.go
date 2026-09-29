@@ -297,3 +297,147 @@ func (a *App) ImportApplicationsFile() (int, error) {
 
 	return count, nil
 }
+
+// GetEmailAccounts returns all configured email accounts
+func (a *App) GetEmailAccounts() ([]backend.EmailAccount, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	return a.db.GetEmailAccounts()
+}
+
+// SaveEmailAccount inserts or updates an email account
+func (a *App) SaveEmailAccount(req backend.EmailAccountRequest) (*backend.EmailAccount, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	return a.db.SaveEmailAccount(req)
+}
+
+// DeleteEmailAccount deletes an email account and its notifications
+func (a *App) DeleteEmailAccount(id int64) error {
+	if a.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	return a.db.DeleteEmailAccount(id)
+}
+
+// TestEmailConnection tests connection to IMAP server with provided credentials
+func (a *App) TestEmailConnection(req backend.EmailAccountRequest) (string, error) {
+	syncer := backend.NewEmailSyncer()
+	if err := syncer.TestConnection(req); err != nil {
+		return "", err
+	}
+	return "Connected to mailbox successfully!", nil
+}
+
+// SyncEmailAccount fetches recent notifications for a specific account
+func (a *App) SyncEmailAccount(accountID int64) (*backend.SyncResult, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	account, err := a.db.GetEmailAccount(accountID)
+	if err != nil {
+		return nil, fmt.Errorf("account not found: %w", err)
+	}
+
+	existingIDs, err := a.db.GetExistingMessageIDs(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	syncer := backend.NewEmailSyncer()
+	notifs, syncErr := syncer.SyncMailbox(account, existingIDs)
+	if syncErr != nil {
+		_ = a.db.UpdateEmailAccountSyncStatus(accountID, "FAILED: "+syncErr.Error())
+		return &backend.SyncResult{
+			AccountID:    accountID,
+			AccountEmail: account.Email,
+			Success:      false,
+			Error:        syncErr.Error(),
+		}, syncErr
+	}
+
+	insertedCount, err := a.db.InsertEmailNotifications(notifs)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = a.db.UpdateEmailAccountSyncStatus(accountID, "SUCCESS")
+	return &backend.SyncResult{
+		AccountID:    accountID,
+		AccountEmail: account.Email,
+		Success:      true,
+		NewEmails:    insertedCount,
+	}, nil
+}
+
+// SyncAllEmailAccounts syncs all active email accounts
+func (a *App) SyncAllEmailAccounts() ([]backend.SyncResult, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	accounts, err := a.db.GetEmailAccounts()
+	if err != nil {
+		return nil, err
+	}
+
+	var results []backend.SyncResult
+	for _, acc := range accounts {
+		if !acc.IsActive {
+			continue
+		}
+		res, _ := a.SyncEmailAccount(acc.ID)
+		if res != nil {
+			results = append(results, *res)
+		}
+	}
+
+	if results == nil {
+		results = []backend.SyncResult{}
+	}
+	return results, nil
+}
+
+// GetEmailNotifications returns parsed job notifications
+func (a *App) GetEmailNotifications(limit int, unreadOnly bool, platform string) ([]backend.EmailNotification, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	return a.db.GetEmailNotifications(limit, unreadOnly, platform)
+}
+
+// MarkNotificationAsRead marks notification as read or unread
+func (a *App) MarkNotificationAsRead(id int64, isRead bool) error {
+	if a.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	return a.db.MarkNotificationAsRead(id, isRead)
+}
+
+// MarkAllNotificationsAsRead marks all notifications as read
+func (a *App) MarkAllNotificationsAsRead() error {
+	if a.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	return a.db.MarkAllNotificationsAsRead()
+}
+
+// DeleteNotification deletes a notification
+func (a *App) DeleteNotification(id int64) error {
+	if a.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	return a.db.DeleteNotification(id)
+}
+
+// GetUnreadNotificationCount returns unread count for badge
+func (a *App) GetUnreadNotificationCount() (int, error) {
+	if a.db == nil {
+		return 0, nil
+	}
+	return a.db.GetUnreadNotificationCount()
+}
+

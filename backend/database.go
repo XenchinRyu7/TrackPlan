@@ -101,6 +101,40 @@ func (m *DBManager) migrate() error {
 		note TEXT NOT NULL DEFAULT '',
 		created_at TEXT NOT NULL
 	);
+
+	CREATE TABLE IF NOT EXISTS email_accounts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		label TEXT NOT NULL DEFAULT '',
+		provider TEXT NOT NULL DEFAULT 'GMAIL',
+		email TEXT NOT NULL,
+		imap_host TEXT NOT NULL DEFAULT 'imap.gmail.com',
+		imap_port INTEGER NOT NULL DEFAULT 993,
+		app_password TEXT NOT NULL DEFAULT '',
+		use_ssl INTEGER NOT NULL DEFAULT 1,
+		is_active INTEGER NOT NULL DEFAULT 1,
+		last_sync_at TEXT NOT NULL DEFAULT '',
+		last_sync_status TEXT NOT NULL DEFAULT '',
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS email_notifications (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		account_id INTEGER NOT NULL REFERENCES email_accounts(id) ON DELETE CASCADE,
+		account_email TEXT NOT NULL DEFAULT '',
+		message_id TEXT NOT NULL,
+		sender TEXT NOT NULL DEFAULT '',
+		subject TEXT NOT NULL DEFAULT '',
+		snippet TEXT NOT NULL DEFAULT '',
+		platform TEXT NOT NULL DEFAULT 'OTHER',
+		detected_company TEXT NOT NULL DEFAULT '',
+		detected_role TEXT NOT NULL DEFAULT '',
+		detected_status TEXT NOT NULL DEFAULT 'UPDATE',
+		received_at TEXT NOT NULL,
+		is_read INTEGER NOT NULL DEFAULT 0,
+		created_at TEXT NOT NULL,
+		UNIQUE(account_id, message_id)
+	);
 	`
 
 	if _, err := m.db.Exec(baseTables); err != nil {
@@ -117,6 +151,10 @@ func (m *DBManager) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_apps_applied_date ON applications(applied_date DESC);
 	CREATE INDEX IF NOT EXISTS idx_apps_interview_date ON applications(interview_date);
 	CREATE INDEX IF NOT EXISTS idx_timeline_app_id ON timeline_events(application_id);
+	CREATE INDEX IF NOT EXISTS idx_email_notif_account ON email_notifications(account_id);
+	CREATE INDEX IF NOT EXISTS idx_email_notif_read ON email_notifications(is_read);
+	CREATE INDEX IF NOT EXISTS idx_email_notif_platform ON email_notifications(platform);
+	CREATE INDEX IF NOT EXISTS idx_email_notif_received ON email_notifications(received_at DESC);
 	`
 
 	if _, err := m.db.Exec(indices); err != nil {
@@ -891,4 +929,321 @@ func (m *DBManager) RestoreFromBackup(backupPath string) error {
 	}
 	m.db = db
 	return m.migrate()
+}
+
+// GetEmailAccounts returns all configured email accounts
+func (m *DBManager) GetEmailAccounts() ([]EmailAccount, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	rows, err := m.db.Query(`
+		SELECT id, label, provider, email, imap_host, imap_port, app_password, use_ssl, is_active,
+		       last_sync_at, last_sync_status, created_at, updated_at
+		FROM email_accounts
+		ORDER BY id ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var accounts []EmailAccount
+	for rows.Next() {
+		var a EmailAccount
+		var useSSL, isActive int
+		if err := rows.Scan(
+			&a.ID, &a.Label, &a.Provider, &a.Email, &a.IMAPHost, &a.IMAPPort, &a.AppPassword,
+			&useSSL, &isActive, &a.LastSyncAt, &a.LastSyncStatus, &a.CreatedAt, &a.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		a.UseSSL = useSSL == 1
+		a.IsActive = isActive == 1
+		accounts = append(accounts, a)
+	}
+
+	if accounts == nil {
+		accounts = []EmailAccount{}
+	}
+	return accounts, nil
+}
+
+// GetEmailAccount returns a single email account by ID
+func (m *DBManager) GetEmailAccount(id int64) (*EmailAccount, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var a EmailAccount
+	var useSSL, isActive int
+	err := m.db.QueryRow(`
+		SELECT id, label, provider, email, imap_host, imap_port, app_password, use_ssl, is_active,
+		       last_sync_at, last_sync_status, created_at, updated_at
+		FROM email_accounts
+		WHERE id = ?
+	`, id).Scan(
+		&a.ID, &a.Label, &a.Provider, &a.Email, &a.IMAPHost, &a.IMAPPort, &a.AppPassword,
+		&useSSL, &isActive, &a.LastSyncAt, &a.LastSyncStatus, &a.CreatedAt, &a.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	a.UseSSL = useSSL == 1
+	a.IsActive = isActive == 1
+	return &a, nil
+}
+
+// SaveEmailAccount inserts or updates an email account
+func (m *DBManager) SaveEmailAccount(req EmailAccountRequest) (*EmailAccount, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	useSSLInt := 0
+	if req.UseSSL {
+		useSSLInt = 1
+	}
+	isActiveInt := 0
+	if req.IsActive {
+		isActiveInt = 1
+	}
+
+	if req.IMAPPort <= 0 {
+		req.IMAPPort = 993
+	}
+	if req.Provider == "" {
+		req.Provider = ProviderGmail
+	}
+
+	if req.ID > 0 {
+		// Update existing
+		_, err := m.db.Exec(`
+			UPDATE email_accounts
+			SET label = ?, provider = ?, email = ?, imap_host = ?, imap_port = ?,
+			    app_password = ?, use_ssl = ?, is_active = ?, updated_at = ?
+			WHERE id = ?
+		`, req.Label, req.Provider, req.Email, req.IMAPHost, req.IMAPPort,
+			req.AppPassword, useSSLInt, isActiveInt, now, req.ID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Insert new
+		res, err := m.db.Exec(`
+			INSERT INTO email_accounts (
+				label, provider, email, imap_host, imap_port, app_password,
+				use_ssl, is_active, last_sync_at, last_sync_status, created_at, updated_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?)
+		`, req.Label, req.Provider, req.Email, req.IMAPHost, req.IMAPPort,
+			req.AppPassword, useSSLInt, isActiveInt, now, now)
+		if err != nil {
+			return nil, err
+		}
+		newID, _ := res.LastInsertId()
+		req.ID = newID
+	}
+
+	var a EmailAccount
+	var useSSL, isActive int
+	err := m.db.QueryRow(`
+		SELECT id, label, provider, email, imap_host, imap_port, app_password, use_ssl, is_active,
+		       last_sync_at, last_sync_status, created_at, updated_at
+		FROM email_accounts
+		WHERE id = ?
+	`, req.ID).Scan(
+		&a.ID, &a.Label, &a.Provider, &a.Email, &a.IMAPHost, &a.IMAPPort, &a.AppPassword,
+		&useSSL, &isActive, &a.LastSyncAt, &a.LastSyncStatus, &a.CreatedAt, &a.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	a.UseSSL = useSSL == 1
+	a.IsActive = isActive == 1
+	return &a, nil
+}
+
+// DeleteEmailAccount deletes an email account and its associated notifications
+func (m *DBManager) DeleteEmailAccount(id int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	_, err := m.db.Exec(`DELETE FROM email_accounts WHERE id = ?`, id)
+	return err
+}
+
+// UpdateEmailAccountSyncStatus records last sync timestamp and status
+func (m *DBManager) UpdateEmailAccountSyncStatus(id int64, status string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	now := time.Now().Format("2006-01-02 15:04")
+	_, err := m.db.Exec(`
+		UPDATE email_accounts
+		SET last_sync_at = ?, last_sync_status = ?
+		WHERE id = ?
+	`, now, status, id)
+	return err
+}
+
+// GetExistingMessageIDs returns map of already fetched message IDs for an account
+func (m *DBManager) GetExistingMessageIDs(accountID int64) (map[string]bool, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	rows, err := m.db.Query(`SELECT message_id FROM email_notifications WHERE account_id = ?`, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make(map[string]bool)
+	for rows.Next() {
+		var msgID string
+		if err := rows.Scan(&msgID); err == nil {
+			ids[msgID] = true
+		}
+	}
+	return ids, nil
+}
+
+// InsertEmailNotifications saves newly parsed notifications
+func (m *DBManager) InsertEmailNotifications(notifs []EmailNotification) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if len(notifs) == 0 {
+		return 0, nil
+	}
+
+	tx, err := m.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`
+		INSERT OR IGNORE INTO email_notifications (
+			account_id, account_email, message_id, sender, subject, snippet, platform,
+			detected_company, detected_role, detected_status, received_at, is_read, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+	`)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+
+	inserted := 0
+	for _, n := range notifs {
+		res, err := stmt.Exec(
+			n.AccountID, n.AccountEmail, n.MessageID, n.Sender, n.Subject, n.Snippet, n.Platform,
+			n.DetectedCompany, n.DetectedRole, n.DetectedStatus, n.ReceivedAt, n.CreatedAt,
+		)
+		if err == nil {
+			rowsAffected, _ := res.RowsAffected()
+			if rowsAffected > 0 {
+				inserted++
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return inserted, nil
+}
+
+// GetEmailNotifications returns notifications with optional platform and unread filtering
+func (m *DBManager) GetEmailNotifications(limit int, unreadOnly bool, platform string) ([]EmailNotification, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	query := `
+		SELECT id, account_id, account_email, message_id, sender, subject, snippet, platform,
+		       detected_company, detected_role, detected_status, received_at, is_read, created_at
+		FROM email_notifications
+		WHERE 1=1
+	`
+	var args []interface{}
+
+	if unreadOnly {
+		query += ` AND is_read = 0`
+	}
+	if platform != "" && platform != "ALL" {
+		query += ` AND platform = ?`
+		args = append(args, platform)
+	}
+
+	query += ` ORDER BY received_at DESC, id DESC`
+	if limit > 0 {
+		query += ` LIMIT ?`
+		args = append(args, limit)
+	} else {
+		query += ` LIMIT 200`
+	}
+
+	rows, err := m.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifs []EmailNotification
+	for rows.Next() {
+		var n EmailNotification
+		var isReadInt int
+		if err := rows.Scan(
+			&n.ID, &n.AccountID, &n.AccountEmail, &n.MessageID, &n.Sender, &n.Subject, &n.Snippet,
+			&n.Platform, &n.DetectedCompany, &n.DetectedRole, &n.DetectedStatus,
+			&n.ReceivedAt, &isReadInt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		n.IsRead = isReadInt == 1
+		notifs = append(notifs, n)
+	}
+
+	if notifs == nil {
+		notifs = []EmailNotification{}
+	}
+	return notifs, nil
+}
+
+// MarkNotificationAsRead updates the read state of a notification
+func (m *DBManager) MarkNotificationAsRead(id int64, isRead bool) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	readInt := 0
+	if isRead {
+		readInt = 1
+	}
+	_, err := m.db.Exec(`UPDATE email_notifications SET is_read = ? WHERE id = ?`, readInt, id)
+	return err
+}
+
+// MarkAllNotificationsAsRead marks all notifications as read
+func (m *DBManager) MarkAllNotificationsAsRead() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	_, err := m.db.Exec(`UPDATE email_notifications SET is_read = 1`)
+	return err
+}
+
+// DeleteNotification removes a notification
+func (m *DBManager) DeleteNotification(id int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	_, err := m.db.Exec(`DELETE FROM email_notifications WHERE id = ?`, id)
+	return err
+}
+
+// GetUnreadNotificationCount returns the number of unread notifications
+func (m *DBManager) GetUnreadNotificationCount() (int, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var count int
+	err := m.db.QueryRow(`SELECT COUNT(*) FROM email_notifications WHERE is_read = 0`).Scan(&count)
+	return count, err
 }

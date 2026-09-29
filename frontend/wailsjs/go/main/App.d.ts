@@ -10,6 +10,10 @@ export function CreateApplication(arg1:backend.CreateApplicationRequest):Promise
 
 export function DeleteApplication(arg1:number):Promise<void>;
 
+export function DeleteEmailAccount(arg1:number):Promise<void>;
+
+export function DeleteNotification(arg1:number):Promise<void>;
+
 export function ExportApplicationsCSV():Promise<string>;
 
 export function ExportApplicationsJSON():Promise<string>;
@@ -20,19 +24,37 @@ export function GetApplications(arg1:backend.FilterOptions):Promise<Array<backen
 
 export function GetDatabasePath():Promise<string>;
 
+export function GetEmailAccounts():Promise<Array<backend.EmailAccount>>;
+
+export function GetEmailNotifications(arg1:number,arg2:boolean,arg3:string):Promise<Array<backend.EmailNotification>>;
+
 export function GetRecentApplications(arg1:number):Promise<Array<backend.Application>>;
 
 export function GetScheduleEvents():Promise<Array<backend.ScheduleEvent>>;
 
 export function GetStats():Promise<backend.Stats>;
 
+export function GetUnreadNotificationCount():Promise<number>;
+
 export function ImportApplicationsFile():Promise<number>;
+
+export function MarkAllNotificationsAsRead():Promise<void>;
+
+export function MarkNotificationAsRead(arg1:number,arg2:boolean):Promise<void>;
 
 export function OpenURL(arg1:string):Promise<void>;
 
 export function RestoreDatabaseFile():Promise<boolean>;
 
+export function SaveEmailAccount(arg1:backend.EmailAccountRequest):Promise<backend.EmailAccount>;
+
 export function SetInterviewDate(arg1:number,arg2:string,arg3:string):Promise<void>;
+
+export function SyncAllEmailAccounts():Promise<Array<backend.SyncResult>>;
+
+export function SyncEmailAccount(arg1:number):Promise<backend.SyncResult>;
+
+export function TestEmailConnection(arg1:backend.EmailAccountRequest):Promise<string>;
 
 export function UpdateApplication(arg1:backend.UpdateApplicationRequest):Promise<backend.Application>;
 

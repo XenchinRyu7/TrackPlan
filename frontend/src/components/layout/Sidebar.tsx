@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   LayoutDashboard,
   Briefcase,
@@ -6,15 +5,17 @@ import {
   Settings,
   Plus,
   Layers,
+  Mail,
 } from 'lucide-react';
 
-export type NavTab = 'dashboard' | 'applications' | 'schedule' | 'settings';
+export type NavTab = 'dashboard' | 'applications' | 'schedule' | 'email-sync' | 'settings';
 
 interface SidebarProps {
   currentTab: NavTab;
   onTabChange: (tab: NavTab) => void;
   onNewApplication: () => void;
   totalApplications: number;
+  unreadEmailCount?: number;
   dbPath?: string;
 }
 
@@ -23,11 +24,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   onNewApplication,
   totalApplications,
+  unreadEmailCount = 0,
 }) => {
   const navItems: Array<{ id: NavTab; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }> = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'applications', label: 'Applications', icon: Briefcase, badge: totalApplications },
     { id: 'schedule', label: 'Schedule', icon: Calendar },
+    { id: 'email-sync', label: 'Email Alerts', icon: Mail, badge: unreadEmailCount > 0 ? unreadEmailCount : undefined },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

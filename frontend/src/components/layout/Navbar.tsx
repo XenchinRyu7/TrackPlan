@@ -21,6 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     dashboard: 'Dashboard',
     applications: 'Applications',
     schedule: 'Schedule',
+    'email-sync': 'Email Alerts',
     settings: 'Settings',
   };
 

@@ -18,6 +18,14 @@ export function DeleteApplication(arg1) {
   return window['go']['main']['App']['DeleteApplication'](arg1);
 }
 
+export function DeleteEmailAccount(arg1) {
+  return window['go']['main']['App']['DeleteEmailAccount'](arg1);
+}
+
+export function DeleteNotification(arg1) {
+  return window['go']['main']['App']['DeleteNotification'](arg1);
+}
+
 export function ExportApplicationsCSV() {
   return window['go']['main']['App']['ExportApplicationsCSV']();
 }
@@ -38,6 +46,14 @@ export function GetDatabasePath() {
   return window['go']['main']['App']['GetDatabasePath']();
 }
 
+export function GetEmailAccounts() {
+  return window['go']['main']['App']['GetEmailAccounts']();
+}
+
+export function GetEmailNotifications(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetEmailNotifications'](arg1, arg2, arg3);
+}
+
 export function GetRecentApplications(arg1) {
   return window['go']['main']['App']['GetRecentApplications'](arg1);
 }
@@ -50,8 +66,20 @@ export function GetStats() {
   return window['go']['main']['App']['GetStats']();
 }
 
+export function GetUnreadNotificationCount() {
+  return window['go']['main']['App']['GetUnreadNotificationCount']();
+}
+
 export function ImportApplicationsFile() {
   return window['go']['main']['App']['ImportApplicationsFile']();
+}
+
+export function MarkAllNotificationsAsRead() {
+  return window['go']['main']['App']['MarkAllNotificationsAsRead']();
+}
+
+export function MarkNotificationAsRead(arg1, arg2) {
+  return window['go']['main']['App']['MarkNotificationAsRead'](arg1, arg2);
 }
 
 export function OpenURL(arg1) {
@@ -62,8 +90,24 @@ export function RestoreDatabaseFile() {
   return window['go']['main']['App']['RestoreDatabaseFile']();
 }
 
+export function SaveEmailAccount(arg1) {
+  return window['go']['main']['App']['SaveEmailAccount'](arg1);
+}
+
 export function SetInterviewDate(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetInterviewDate'](arg1, arg2, arg3);
+}
+
+export function SyncAllEmailAccounts() {
+  return window['go']['main']['App']['SyncAllEmailAccounts']();
+}
+
+export function SyncEmailAccount(arg1) {
+  return window['go']['main']['App']['SyncEmailAccount'](arg1);
+}
+
+export function TestEmailConnection(arg1) {
+  return window['go']['main']['App']['TestEmailConnection'](arg1);
 }
 
 export function UpdateApplication(arg1) {

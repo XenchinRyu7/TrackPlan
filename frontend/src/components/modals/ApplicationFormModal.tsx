@@ -16,6 +16,7 @@ interface ApplicationFormModalProps {
   onClose: () => void;
   onSubmit: (formData: any, isEdit: boolean) => Promise<void>;
   editItem?: backend.Application | null;
+  initialValues?: Partial<backend.Application> | null;
 }
 
 export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
@@ -23,6 +24,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   onClose,
   onSubmit,
   editItem,
+  initialValues,
 }) => {
   const isEdit = !!editItem;
 
@@ -74,26 +76,26 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       setNotes(editItem.notes || '');
       setStatusNote('');
     } else {
-      setCompany('');
-      setPosition('');
-      setType('JOB');
-      setStatus('APPLIED');
-      setAppliedDate(new Date().toISOString().split('T')[0]);
-      setInterviewDate('');
-      setLocation('');
-      setEmploymentType('FULL_TIME');
-      setSalaryMin('');
-      setSalaryMax('');
-      setCurrency('IDR');
-      setJobUrl('');
-      setCompanyUrl('');
-      setContactName('');
-      setContactEmail('');
-      setNotes('');
+      setCompany(initialValues?.company || '');
+      setPosition(initialValues?.position || '');
+      setType((initialValues?.type as ApplicationType) || 'JOB');
+      setStatus((initialValues?.status as ApplicationStatus) || 'APPLIED');
+      setAppliedDate(initialValues?.applied_date || new Date().toISOString().split('T')[0]);
+      setInterviewDate(initialValues?.interview_date || '');
+      setLocation(initialValues?.location || '');
+      setEmploymentType((initialValues?.employment_type as EmploymentType) || 'FULL_TIME');
+      setSalaryMin(initialValues?.salary_min && initialValues.salary_min > 0 ? initialValues.salary_min.toString() : '');
+      setSalaryMax(initialValues?.salary_max && initialValues.salary_max > 0 ? initialValues.salary_max.toString() : '');
+      setCurrency(initialValues?.currency || 'IDR');
+      setJobUrl(initialValues?.job_url || '');
+      setCompanyUrl(initialValues?.company_url || '');
+      setContactName(initialValues?.contact_name || '');
+      setContactEmail(initialValues?.contact_email || '');
+      setNotes(initialValues?.notes || '');
       setStatusNote('');
     }
     setErrors({});
-  }, [editItem, isOpen]);
+  }, [editItem, initialValues, isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
