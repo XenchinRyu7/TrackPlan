@@ -63,9 +63,22 @@ Built with **Go**, **SQLite**, and **React 19** powered by **HeroUI** and styled
 
 ---
 
-## 🚀 Installation & Getting Started
+## 🚀 Download & Installation
 
-### Prerequisites
+### 📦 Pre-built Binaries (Ready to Use)
+
+Kamu bisa langsung mendownload file executable resmi TrackPlan dari [GitHub Releases v1.0.0](https://github.com/XenchinRyu7/TrackPlan/releases/tag/v1.0.0):
+
+| Platform | Download Link | Notes |
+| :--- | :--- | :--- |
+| **Windows (.exe)** | [**📥 Download trackplan-windows-amd64.exe**](https://github.com/XenchinRyu7/TrackPlan/releases/download/v1.0.0/trackplan-windows-amd64.exe) | Langsung double-click tanpa install |
+| **Windows (.zip)** | [**📦 Download trackplan-v1.0.0-windows-amd64.zip**](https://github.com/XenchinRyu7/TrackPlan/releases/download/v1.0.0/trackplan-v1.0.0-windows-amd64.zip) | Arsip zip binary Windows |
+| **macOS** | [**🍏 Download trackplan-v1.0.0-macos-universal.zip**](https://github.com/XenchinRyu7/TrackPlan/releases/download/v1.0.0/trackplan-v1.0.0-macos-universal.zip) | Apple Silicon (M1/M2/M3) & Intel |
+| **Linux** | [**🐧 Download trackplan-v1.0.0-linux-amd64.tar.gz**](https://github.com/XenchinRyu7/TrackPlan/releases/download/v1.0.0/trackplan-v1.0.0-linux-amd64.tar.gz) | Ubuntu, Debian, Arch, Fedora |
+
+---
+
+### Prerequisites (For Developers)
 
 Ensure you have the following installed:
 - [Go 1.22+](https://go.dev/dl/)
