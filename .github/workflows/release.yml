@@ -70,6 +70,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          Copy-Item "build\bin\trackplan.exe" -Destination "trackplan-windows-amd64.exe"
           Compress-Archive -Path "build\bin\trackplan.exe" -DestinationPath "${{ matrix.platform.archive_name }}"
 
       - name: Archive Artifacts (macOS)
@@ -88,5 +89,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ matrix.platform.archive_name }}
+          files: |
+            ${{ matrix.platform.archive_name }}
+            *.exe
           generate_release_notes: true
