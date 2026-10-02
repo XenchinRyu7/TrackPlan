@@ -78,6 +78,21 @@ export function App() {
   const [editEmailAccount, setEditEmailAccount] = useState<backend.EmailAccount | null>(null);
   const [formInitialValues, setFormInitialValues] = useState<Partial<backend.Application> | null>(null);
 
+  // Theme state (Dark / Light)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('trackplan_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  const handleSetTheme = (newTheme: 'dark' | 'light') => {
+    setTheme(newTheme);
+    localStorage.setItem('trackplan_theme', newTheme);
+  };
+
+  const handleToggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    handleSetTheme(next);
+  };
+
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -363,7 +378,7 @@ export function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-black text-zinc-100 font-sans selection:bg-white selection:text-black">
+    <div className={`flex h-screen w-screen overflow-hidden ${theme === 'dark' ? 'bg-black text-zinc-100' : 'bg-slate-50 text-slate-900'} theme-${theme} font-sans selection:bg-white selection:text-black`}>
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
@@ -398,6 +413,8 @@ export function App() {
             }
           }}
           searchInputRef={searchInputRef}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
 
         {/* Tab Views Content */}
@@ -518,6 +535,8 @@ export function App() {
                 totalApplications={stats?.total_applications || 0}
                 onRefreshData={loadData}
                 onShowToast={showToast}
+                theme={theme}
+                onSetTheme={handleSetTheme}
               />
             </div>
           )}

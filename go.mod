@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/emersion/go-imap v1.2.1
 	github.com/wailsapp/wails/v2 v2.15.0
+	golang.org/x/sys v0.46.0
 	modernc.org/sqlite v1.34.5
 )
 
@@ -39,7 +40,6 @@ require (
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.39.0 // indirect
 	modernc.org/libc v1.55.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect

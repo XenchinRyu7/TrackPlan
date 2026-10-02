@@ -1,0 +1,61 @@
+services:
+  # -------------------------------------------------------------
+  # Build Service: Compiles the desktop application into build/bin
+  # Usage: docker compose run --rm build
+  # -------------------------------------------------------------
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    volumes:
+      - .:/app
+      - go-pkg-cache:/go/pkg/mod
+      - frontend-cache:/app/frontend/node_modules
+    working_dir: /app
+    command: >
+      bash -c "
+        cd frontend && npm ci &&
+        cd .. && wails build -platform linux/amd64 -clean
+      "
+
+  # -------------------------------------------------------------
+  # Dev Frontend Service: Runs Vite dev server with hot reload
+  # Usage: docker compose up dev-frontend
+  # -------------------------------------------------------------
+  dev-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend-cache:/app/frontend/node_modules
+    working_dir: /app/frontend
+    ports:
+      - "5173:5173"
+    command: npm run dev -- --host 0.0.0.0
+
+  # -------------------------------------------------------------
+  # Test Service: Runs Go tests and frontend type-checking
+  # Usage: docker compose run --rm test
+  # -------------------------------------------------------------
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    volumes:
+      - .:/app
+      - go-pkg-cache:/go/pkg/mod
+      - frontend-cache:/app/frontend/node_modules
+    working_dir: /app
+    command: >
+      bash -c "
+        go test -v ./backend/... &&
+        cd frontend && npm ci && npm run build
+      "
+
+volumes:
+  go-pkg-cache:
+  frontend-cache:

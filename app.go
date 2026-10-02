@@ -441,3 +441,14 @@ func (a *App) GetUnreadNotificationCount() (int, error) {
 	return a.db.GetUnreadNotificationCount()
 }
 
+// GetAutoStart checks if application is configured to run at Windows boot
+func (a *App) GetAutoStart() (bool, error) {
+	return backend.IsAutoStartEnabled()
+}
+
+// SetAutoStart enables or disables launch at Windows boot
+func (a *App) SetAutoStart(enable bool) error {
+	return backend.SetAutoStart(enable)
+}
+
+

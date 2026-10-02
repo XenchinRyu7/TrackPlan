@@ -26,46 +26,51 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats, onCardClick }) => {
       id: 'total',
       title: 'Total Applications',
       count: total,
-      subtext: 'All tracked entries',
+      subtext: 'Semua lamaran tersimpan',
       icon: Briefcase,
       statusFilter: 'ALL',
-      isHighlight: false,
+      accentColor: 'text-zinc-300 border-zinc-700 bg-zinc-900',
+      badgeColor: 'hover:border-zinc-500',
     },
     {
       id: 'active',
       title: 'Active Pipeline',
       count: active,
-      subtext: 'In review or process',
+      subtext: 'Sedang berjalan',
       icon: Activity,
       statusFilter: 'ACTIVE',
-      isHighlight: false,
+      accentColor: 'text-blue-400 border-blue-500/30 bg-blue-950/40',
+      badgeColor: 'hover:border-blue-500/60',
     },
     {
       id: 'interviews',
       title: 'Interviews',
       count: interviews,
-      subtext: 'Scheduled & ongoing',
+      subtext: 'Jadwal wawancara',
       icon: CalendarCheck,
       statusFilter: 'INTERVIEW',
-      isHighlight: true,
+      accentColor: 'text-amber-400 border-amber-500/30 bg-amber-950/40',
+      badgeColor: 'hover:border-amber-500/60',
     },
     {
       id: 'offers',
       title: 'Offers',
       count: offers,
-      subtext: 'Accepted or pending',
+      subtext: 'Tawaran kerja',
       icon: Award,
       statusFilter: 'OFFER',
-      isHighlight: false,
+      accentColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-950/40',
+      badgeColor: 'hover:border-emerald-500/60',
     },
     {
       id: 'rejected',
       title: 'Rejected',
       count: rejected,
-      subtext: 'Archived attempts',
+      subtext: 'Belum berhasil',
       icon: XCircle,
       statusFilter: 'REJECTED',
-      isHighlight: false,
+      accentColor: 'text-rose-400 border-rose-500/30 bg-rose-950/40',
+      badgeColor: 'hover:border-rose-500/60',
     },
   ];
 
@@ -77,22 +82,14 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats, onCardClick }) => {
           <div
             key={card.id}
             onClick={() => onCardClick?.(card.statusFilter)}
-            className={`group p-4 rounded-2xl border transition-all duration-150 cursor-pointer ${
-              card.isHighlight
-                ? 'bg-zinc-900 border-zinc-600 hover:border-white shadow-md shadow-black'
-                : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600'
-            }`}
+            className={`group p-4 rounded-2xl border transition-all duration-150 cursor-pointer bg-zinc-950 border-zinc-800 ${card.badgeColor} hover:shadow-lg hover:shadow-black/40`}
           >
             <div className="flex items-start justify-between">
               <span className="text-xs font-semibold text-zinc-400 group-hover:text-white transition-colors">
                 {card.title}
               </span>
               <div
-                className={`w-7 h-7 rounded-lg flex items-center justify-center border ${
-                  card.isHighlight
-                    ? 'bg-white text-black border-white'
-                    : 'bg-zinc-900 text-zinc-300 border-zinc-700'
-                }`}
+                className={`w-7 h-7 rounded-lg flex items-center justify-center border ${card.accentColor}`}
               >
                 <IconComponent className="w-3.5 h-3.5" />
               </div>

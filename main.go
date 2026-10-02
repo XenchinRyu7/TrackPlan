@@ -7,6 +7,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
@@ -23,10 +24,19 @@ func main() {
 		Height:    840,
 		MinWidth:  960,
 		MinHeight: 620,
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId: "e9f02931-482a-4361-b756-trackplan-instance",
+			OnSecondInstanceLaunch: func(secondInstanceData options.SecondInstanceData) {
+				if app.ctx != nil {
+					runtime.WindowUnminimise(app.ctx)
+					runtime.WindowShow(app.ctx)
+				}
+			},
+		},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 15, G: 23, B: 42, A: 1}, // Slate 900
+		BackgroundColour: &options.RGBA{R: 9, G: 9, B: 11, A: 1}, // Zinc 950
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
 		Bind: []interface{}{

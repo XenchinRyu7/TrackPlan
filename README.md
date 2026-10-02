@@ -114,6 +114,21 @@ The output executable will be generated at `build/bin/trackplan.exe`.
 go test -v ./backend
 ```
 
+### 🐳 Docker Workflow (Containerized Dev & Build)
+
+If you prefer building or developing in Docker without installing Go or GTK dependencies locally:
+
+```bash
+# Compile desktop application inside Docker
+docker compose run --rm build
+
+# Run Vite frontend dev server with hot reload
+docker compose up dev-frontend
+
+# Run full backend and frontend tests in Docker
+docker compose run --rm test
+```
+
 ---
 
 ## 🏗️ Architecture

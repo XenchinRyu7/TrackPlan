@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Sun, Moon } from 'lucide-react';
 import { NavTab } from './Sidebar';
 
 interface NavbarProps {
@@ -8,6 +8,8 @@ interface NavbarProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,6 +18,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   searchQuery,
   onSearchChange,
   searchInputRef,
+  theme,
+  onToggleTheme,
 }) => {
   const titles: Record<NavTab, string> = {
     dashboard: 'Dashboard',
@@ -54,6 +58,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </kbd>
           )}
         </div>
+
+        {/* Theme Switcher Toggle */}
+        <button
+          onClick={onToggleTheme}
+          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-all cursor-pointer"
+          title={`Ganti ke mode ${theme === 'dark' ? 'Terang (Light)' : 'Gelap (Dark)'}`}
+        >
+          {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
+        </button>
 
         {/* Quick Add button */}
         <button

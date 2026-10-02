@@ -41,7 +41,17 @@ export const StatusDistributionChart: React.FC<StatusDistributionChartProps> = (
             const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
             const barWidthPercent = (count / maxCount) * 100;
             const config = STATUS_CONFIG[statusKey];
-            const isInterviewOrOffer = statusKey === 'INTERVIEW' || statusKey === 'OFFER';
+            const getBarColor = (s: string) => {
+              switch (s) {
+                case 'SAVED': return 'bg-cyan-400';
+                case 'APPLIED': return 'bg-blue-400';
+                case 'SCREENING': return 'bg-purple-400';
+                case 'INTERVIEW': return 'bg-amber-400';
+                case 'OFFER': return 'bg-emerald-400';
+                case 'REJECTED': return 'bg-rose-400';
+                default: return 'bg-zinc-500';
+              }
+            };
 
             return (
               <div
@@ -52,21 +62,17 @@ export const StatusDistributionChart: React.FC<StatusDistributionChartProps> = (
                 {/* Status Label */}
                 <div className="w-24 shrink-0 flex items-center gap-2">
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isInterviewOrOffer ? 'bg-white' : 'bg-zinc-500'
-                    }`}
+                    className={`w-2 h-2 rounded-full ${config.dotColor}`}
                   />
-                  <span className="text-xs font-semibold text-zinc-400 group-hover:text-white transition-colors truncate">
+                  <span className="text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors truncate">
                     {config.label}
                   </span>
                 </div>
 
-                {/* Monochrome progress track & fill */}
+                {/* Colorful progress track & fill */}
                 <div className="flex-1 h-2 bg-zinc-900 rounded-full overflow-hidden p-0.5 border border-zinc-800/80">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      isInterviewOrOffer ? 'bg-white' : 'bg-zinc-500 group-hover:bg-zinc-300'
-                    }`}
+                    className={`h-full rounded-full transition-all duration-300 ${getBarColor(statusKey)}`}
                     style={{
                       width: count > 0 ? `${Math.max(barWidthPercent, 5)}%` : '0%',
                     }}

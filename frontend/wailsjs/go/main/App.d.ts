@@ -22,6 +22,8 @@ export function GetApplicationDetail(arg1:number):Promise<backend.ApplicationDet
 
 export function GetApplications(arg1:backend.FilterOptions):Promise<Array<backend.Application>>;
 
+export function GetAutoStart():Promise<boolean>;
+
 export function GetDatabasePath():Promise<string>;
 
 export function GetEmailAccounts():Promise<Array<backend.EmailAccount>>;
@@ -47,6 +49,8 @@ export function OpenURL(arg1:string):Promise<void>;
 export function RestoreDatabaseFile():Promise<boolean>;
 
 export function SaveEmailAccount(arg1:backend.EmailAccountRequest):Promise<backend.EmailAccount>;
+
+export function SetAutoStart(arg1:boolean):Promise<void>;
 
 export function SetInterviewDate(arg1:number,arg2:string,arg3:string):Promise<void>;
 

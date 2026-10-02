@@ -42,6 +42,10 @@ export function GetApplications(arg1) {
   return window['go']['main']['App']['GetApplications'](arg1);
 }
 
+export function GetAutoStart() {
+  return window['go']['main']['App']['GetAutoStart']();
+}
+
 export function GetDatabasePath() {
   return window['go']['main']['App']['GetDatabasePath']();
 }
@@ -92,6 +96,10 @@ export function RestoreDatabaseFile() {
 
 export function SaveEmailAccount(arg1) {
   return window['go']['main']['App']['SaveEmailAccount'](arg1);
+}
+
+export function SetAutoStart(arg1) {
+  return window['go']['main']['App']['SetAutoStart'](arg1);
 }
 
 export function SetInterviewDate(arg1, arg2, arg3) {
